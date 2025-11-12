@@ -6,17 +6,11 @@ import { checkUserSubscription } from '@/lib/data';
 import Link from 'next/link';
 import React from 'react';
 
-// 🛑🛑🛑 Final Solution: Inline Type Definition භාවිතය 🛑🛑🛑
-// Global types ඉවත් කිරීමෙන් පසු, මෙය Next.js Build එකට අවශ්‍ය සරලම Type එකයි.
-type BookPageProps = { 
-    params: { bookId: string }; 
-    searchParams: { view?: string }; 
-};
+// 🛑🛑🛑 Final Fix: Global/Custom Props Types සම්පූර්ණයෙන්ම ඉවත් කර ඇත 🛑🛑🛑
 
 // Plan Levels සඳහා Simple Rank
 const PLAN_RANK: { [key: string]: number } = { 'Free': 0, 'Plus': 1, 'Pro': 2 };
 
-// fetchBookDetails function
 async function fetchBookDetails(bookId: string) {
     const { data: book, error } = await supabase
         .from('books')
@@ -30,8 +24,14 @@ async function fetchBookDetails(bookId: string) {
     return book;
 }
 
-// 🛑🛑 Component අර්ථ දැක්වීම 🛑🛑
-export default async function BookDetailPage({ params, searchParams }: BookPageProps) {
+// 🛑🛑 Component අර්ථ දැක්වීම (Props සඳහා සරලම Inline Type භාවිතය) 🛑🛑
+export default async function BookDetailPage({ 
+    params, 
+    searchParams 
+}: { 
+    params: { bookId: string }; // 🔑 නිවැරදිම Params Type එක
+    searchParams: { view?: string }; // Search Params Type එක
+}) {
     const book = await fetchBookDetails(params.bookId);
     const { userPlan } = await checkUserSubscription(); 
 
