@@ -1,136 +1,98 @@
 import { supabase } from '@/lib/supabaseClient';
 import { redirect } from 'next/navigation';
-import { Star } from 'lucide-react'; 
-import BookPageView from '@/components/BookPageView'; 
-import { checkUserSubscription } from '@/lib/data'; 
-import Link from 'next/link';
+import { BookOpen } from 'lucide-react';
 import React from 'react';
 
-// 🧩 Define the correct prop types for App Router page
-type BookDetailPageProps = {
-  params: {
-    bookId: string;
-  };
-  searchParams: {
-    view?: string;
-  };
+// ✅ Local type definition (no PageProps import!)
+type EpisodePageProps = {
+  params: { bookId: string };
 };
 
-// Simple rank levels for subscription plans
-const PLAN_RANK: Record<string, number> = {
-  Free: 0,
-  Plus: 1,
-  Pro: 2,
-};
-
-// Fetch book details from Supabase
-async function fetchBookDetails(bookId: string) {
-  const { data: book, error } = await supabase
-    .from('books')
+// 🧩 Supabase එකෙන් ape_katha table එකේ data fetch කිරීම
+async function fetchEpisodeDetails(bookId: string) {
+  const { data: episode, error } = await supabase
+    .from('ape_katha')
     .select('*')
-    .eq('book_id', bookId)
+    .eq('episode_id', bookId)
     .single();
 
-  if (error || !book) {
-    redirect('/');
+  if (error || !episode) {
+    redirect('/category/ape-katha'); // Data නැත්නම් redirect වෙයි
   }
-  return book;
+
+  return episode;
 }
 
-// ✅ Main Page Component
-export default async function BookDetailPage({ params, searchParams }: BookDetailPageProps) {
-  const book = await fetchBookDetails(params.bookId);
-  const { userPlan } = await checkUserSubscription();
+// 🧠 Dynamic metadata (SEO සඳහා)
+export async function generateMetadata({
+  params,
+}: {
+  params: { bookId: string };
+}) {
+  const episode = await fetchEpisodeDetails(params.bookId);
+  if (!episode) return { title: 'Episode Not Found' };
+  return {
+    title: `${episode.title} (Ep. ${episode.episode_number}) - Sith Roo`,
+  };
+}
 
-  const requiredRank = PLAN_RANK[book.required_plan] || 0;
-  const userRank = PLAN_RANK[userPlan] || 0;
-  const hasAccess = userRank >= requiredRank;
+// 🖼️ Main Page Component
+export default async function BookDetailPage({ params }: EpisodePageProps) {
+  const { bookId } = params;
+  const episode = await fetchEpisodeDetails(bookId);
 
-  // Generate rating stars
-  const ratingStars = Array.from({ length: 5 }, (_, i) => (
-    <Star
-      key={i}
-      size={20}
-      fill={i < Math.round(book.rating || 0) ? '#FFC300' : 'none'}
-      color="#FFC300"
-    />
-  ));
+  // 🧱 Image/Text split logic
+  const contentBlocks = episode.story_content?.split('---IMAGE-BREAK---') || [];
 
-  // 🔸 Reading View
-  if (searchParams.view === 'read') {
-    if (!hasAccess) {
-      redirect(`/payment?error=access_denied&required=${book.required_plan}`);
-    }
-
-    return (
-      <div className="container mx-auto px-4 md:px-8 py-10">
-        <BookPageView bookTitle={book.title} />
-      </div>
-    );
-  }
-
-  // 🔸 Book Details View
   return (
-    <div className="container mx-auto px-4 md:px-8 py-10">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 bg-white p-8 rounded-xl shadow-2xl">
-        {/* Book Cover */}
-        <div className="lg:col-span-1 flex justify-center">
-          <img
-            src={book.cover_url || '/placeholder-book.png'}
-            alt={book.title}
-            className="w-full max-w-xs rounded-xl shadow-2xl"
-          />
-        </div>
+    <div className="container mx-auto px-4 md:px-8 py-10 max-w-4xl">
+      {/* Title and Info */}
+      <h1 className="text-4xl font-extrabold text-[#071952] mb-2">
+        {episode.title}
+      </h1>
+      <h2 className="text-2xl font-semibold text-red-600 mb-8">
+        Episode {episode.episode_number}
+      </h2>
 
-        {/* Book Details */}
-        <div className="lg:col-span-2 space-y-6">
-          <h1 className="text-4xl font-extrabold text-[#071952]">{book.title}</h1>
-          <h2 className="text-xl font-semibold text-gray-700">
-            Author: {book.author}
-          </h2>
+      {/* Content */}
+      <div className="bg-white p-8 rounded-xl shadow-2xl space-y-8 border-l-4 border-red-500">
+        {contentBlocks.length > 0 ? (
+          contentBlocks.map((block: string, index: number) => {
+            // 🖼️ Image detection
+            if (
+              block.trim().startsWith('http') ||
+              block.trim().startsWith('/images/')
+            ) {
+              return (
+                <div key={index} className="flex justify-center my-6">
+                  <img
+                    src={block.trim()}
+                    alt={`Image for segment ${index}`}
+                    className="w-full h-auto max-h-[60vh] object-contain rounded-lg shadow-xl border border-gray-200"
+                  />
+                </div>
+              );
+            } else {
+              // 📝 Text section
+              return (
+                <p
+                  key={index}
+                  className="text-lg text-gray-800 leading-relaxed indent-8 whitespace-pre-wrap"
+                >
+                  {block.trim()}
+                </p>
+              );
+            }
+          })
+        ) : (
+          <p className="text-gray-600 italic">No story content available.</p>
+        )}
+      </div>
 
-          <div className="flex items-center space-x-2">
-            <div className="flex space-x-0.5">{ratingStars}</div>
-            <span className="text-gray-500">
-              ({book.rating?.toFixed(1) ?? '0.0'}/5)
-            </span>
-          </div>
-
-          <p className="text-lg text-gray-800">
-            {book.description || 'No description available.'}
-          </p>
-
-          {/* Read Button & Plan Check */}
-          <div className="pt-4 border-t border-gray-100">
-            <span
-              className={`px-4 py-2 inline-block rounded-full font-bold text-white shadow-md ${
-                book.required_plan === 'Pro'
-                  ? 'bg-red-600'
-                  : book.required_plan === 'Plus'
-                  ? 'bg-green-600'
-                  : 'bg-gray-600'
-              }`}
-            >
-              Plan Required: {book.required_plan}
-            </span>
-
-            {!hasAccess ? (
-              <Link
-                href="/payment"
-                className="ml-6 bg-red-500 text-white px-8 py-3 rounded-xl font-extrabold hover:bg-red-600 transition shadow-lg inline-block"
-              >
-                Subscribe to Read ({book.required_plan})
-              </Link>
-            ) : (
-              <Link
-                href={`/book/${book.book_id}?view=read`}
-                className="ml-6 bg-[#FFC300] text-[#071952] px-8 py-3 rounded-xl font-extrabold hover:bg-[#D4A700] transition shadow-lg inline-block"
-              >
-                Read Now
-              </Link>
-            )}
-          </div>
-        </div>
+      {/* Footer */}
+      <div className="mt-8 text-center text-gray-500">
+        <BookOpen size={20} className="inline-block mr-2" />
+        End of Episode {episode.episode_number}
       </div>
     </div>
   );
