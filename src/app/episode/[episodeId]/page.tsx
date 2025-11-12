@@ -1,16 +1,15 @@
-// src/app/episode/[episodeId]/page.tsx
 import { supabase } from '@/lib/supabaseClient';
 import { redirect } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
+import React from 'react';
 
-// 🛑🛑🛑 TypeScript Error Fix: නිවැරදි Props Interface 🛑🛑🛑
-interface EpisodeDetailPageProps {
-    params: {
-        episodeId: string;
-    };
-}
+// 🛑🛑🛑 Final TypeScript Fix: Type Definitions for Dynamic Props 🛑🛑🛑
+type EpisodePageProps = { 
+    params: { episodeId: string }; 
+};
 
 export async function generateMetadata({ params }: { params: { episodeId: string } }) {
+    // metadata generation logic...
     const episode = await fetchEpisodeDetails(params.episodeId);
     if (!episode) return { title: 'Episode Not Found' };
     return { title: `${episode.title} (Ep. ${episode.episode_number}) - Sith Roo` };
@@ -29,11 +28,11 @@ async function fetchEpisodeDetails(episodeId: string) {
     return episode;
 }
 
-// 🛑 Component අර්ථ දැක්වීම 🛑
-export default async function EpisodeDetailPage({ params }: EpisodeDetailPageProps) {
+// 🛑🛑 Component අර්ථ දැක්වීම 🛑🛑
+export default async function EpisodeDetailPage({ params }: EpisodePageProps) {
     const episode = await fetchEpisodeDetails(params.episodeId);
 
-    // Image/Text වෙන් කිරීමේ Logic
+    // Image/Text වෙන් කිරීමේ Logic (Delimiter: ---IMAGE-BREAK---)
     const contentBlocks = episode.story_content.split('---IMAGE-BREAK---');
     
     return (
