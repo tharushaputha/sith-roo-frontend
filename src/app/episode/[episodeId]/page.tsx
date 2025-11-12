@@ -1,6 +1,14 @@
+// src/app/episode/[episodeId]/page.tsx
 import { supabase } from '@/lib/supabaseClient';
 import { redirect } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
+
+// 🛑🛑🛑 TypeScript Error Fix: නිවැරදි Props Interface 🛑🛑🛑
+interface EpisodeDetailPageProps {
+    params: {
+        episodeId: string;
+    };
+}
 
 export async function generateMetadata({ params }: { params: { episodeId: string } }) {
     const episode = await fetchEpisodeDetails(params.episodeId);
@@ -9,7 +17,6 @@ export async function generateMetadata({ params }: { params: { episodeId: string
 }
 
 async function fetchEpisodeDetails(episodeId: string) {
-    // 🛑 ape_katha Table එකෙන් Single Episode Fetch කිරීම
     const { data: episode, error } = await supabase
         .from('ape_katha')
         .select('*')
@@ -22,12 +29,11 @@ async function fetchEpisodeDetails(episodeId: string) {
     return episode;
 }
 
-export default async function EpisodeDetailPage({ params }: { params: { episodeId: string } }) {
+// 🛑 Component අර්ථ දැක්වීම 🛑
+export default async function EpisodeDetailPage({ params }: EpisodeDetailPageProps) {
     const episode = await fetchEpisodeDetails(params.episodeId);
 
-    // 🛑 1. Image සහ Text සඳහා Simple Formatting Logic
-    // අපි කතාවේ content එක Image/Text ලෙස වෙන් කිරීමට 
-    // විශේෂිත delimiter (උදා: [IMG_URL] හෝ [IMG] ) එකක් යොදා ගනිමු
+    // Image/Text වෙන් කිරීමේ Logic
     const contentBlocks = episode.story_content.split('---IMAGE-BREAK---');
     
     return (
@@ -39,7 +45,7 @@ export default async function EpisodeDetailPage({ params }: { params: { episodeI
             <div className="bg-white p-8 rounded-xl shadow-2xl space-y-8 border-l-4 border-red-500">
                 
                 {contentBlocks.map((block: string, index: number) => {
-                    // Block එක Image URL එකක්දැයි පරීක්ෂා කිරීම
+                    // Image URL පරීක්ෂා කිරීම
                     if (block.trim().startsWith('http') || block.trim().startsWith('/images/')) {
                         return (
                             <div key={index} className="flex justify-center my-6">
@@ -51,7 +57,7 @@ export default async function EpisodeDetailPage({ params }: { params: { episodeI
                             </div>
                         );
                     } else {
-                        // Text Block (Paragraph)
+                        // Text Block
                         return (
                             <p key={index} className="text-lg text-gray-800 leading-relaxed indent-8 whitespace-pre-wrap">
                                 {block.trim()}
