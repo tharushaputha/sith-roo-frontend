@@ -5,13 +5,8 @@ import BookPageView from '@/components/BookPageView';
 import { checkUserSubscription } from '@/lib/data'; 
 import Link from 'next/link';
 import React from 'react';
-
-// 🛑🛑🛑 Final TypeScript Fix: Type Definitions for Dynamic Props 🛑🛑🛑
-// Inline Type Definition භාවිතයෙන් Netlify Build Error එක මඟහරවා ගනිමු
-type BookPageProps = { 
-    params: { bookId: string }; 
-    searchParams: { view?: string }; 
-};
+// 🛑🛑🛑 නව Type Definition එක Import කරන්න 🛑🛑🛑
+import type { BookPageProps } from '@/types/page-props'; 
 
 // Plan Levels සඳහා Simple Rank
 const PLAN_RANK: { [key: string]: number } = { 'Free': 0, 'Plus': 1, 'Pro': 2 };
@@ -29,8 +24,7 @@ async function fetchBookDetails(bookId: string) {
     return book;
 }
 
-
-// 🛑🛑 Component අර්ථ දැක්වීම 🛑🛑
+// 🛑🛑 Component අර්ථ දැක්වීම (BookPageProps භාවිතයෙන්) 🛑🛑
 export default async function BookDetailPage({ params, searchParams }: BookPageProps) {
     const book = await fetchBookDetails(params.bookId);
     const { userPlan } = await checkUserSubscription(); 
@@ -40,21 +34,8 @@ export default async function BookDetailPage({ params, searchParams }: BookPageP
 
     const hasAccess = userRank >= requiredRank;
     
-    // 1. Reading View Logic
-    if (searchParams.view === 'read') {
-        
-        if (!hasAccess) {
-             // Access නැතිනම්, Payment Page එකට යොමු කරන්න
-             redirect('/payment?error=access_denied&required=' + book.required_plan); 
-        }
+    // ... (ඉතිරි කේතය එලෙසම පවතී)
 
-        return (
-            <div className="container mx-auto px-4 md:px-8 py-10">
-                <BookPageView bookTitle={book.title} />
-            </div>
-        );
-    }
-    
     // Rating Stars
     const ratingStars = Array.from({ length: 5 }, (_, i) => (
         <Star 
@@ -65,6 +46,20 @@ export default async function BookDetailPage({ params, searchParams }: BookPageP
         />
     ));
 
+    // 1. Reading View Logic
+    if (searchParams.view === 'read') {
+        
+        if (!hasAccess) {
+             redirect('/payment?error=access_denied&required=' + book.required_plan); 
+        }
+
+        return (
+            <div className="container mx-auto px-4 md:px-8 py-10">
+                <BookPageView bookTitle={book.title} />
+            </div>
+        );
+    }
+    
     return (
         <div className="container mx-auto px-4 md:px-8 py-10">
             {/* Book Details View */}

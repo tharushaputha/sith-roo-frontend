@@ -2,14 +2,10 @@ import { supabase } from '@/lib/supabaseClient';
 import { redirect } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
 import React from 'react';
-
-// 🛑🛑🛑 Final TypeScript Fix: Type Definitions for Dynamic Props 🛑🛑🛑
-type EpisodePageProps = { 
-    params: { episodeId: string }; 
-};
+// 🛑🛑🛑 නව Type Definition එක Import කරන්න 🛑🛑🛑
+import type { EpisodePageProps } from '@/types/page-props';
 
 export async function generateMetadata({ params }: { params: { episodeId: string } }) {
-    // metadata generation logic...
     const episode = await fetchEpisodeDetails(params.episodeId);
     if (!episode) return { title: 'Episode Not Found' };
     return { title: `${episode.title} (Ep. ${episode.episode_number}) - Sith Roo` };
@@ -28,9 +24,9 @@ async function fetchEpisodeDetails(episodeId: string) {
     return episode;
 }
 
-// 🛑🛑 Component අර්ථ දැක්වීම 🛑🛑
+// 🛑🛑 Component අර්ථ දැක්වීම (EpisodePageProps භාවිතයෙන්) 🛑🛑
 export default async function EpisodeDetailPage({ params }: EpisodePageProps) {
-    const episode = await fetchEpisodeDetails(params.episodeId);
+    const episode = await fetchEpisodeDetails(params.params.episodeId); // Note: Fix the property access here
 
     // Image/Text වෙන් කිරීමේ Logic (Delimiter: ---IMAGE-BREAK---)
     const contentBlocks = episode.story_content.split('---IMAGE-BREAK---');
