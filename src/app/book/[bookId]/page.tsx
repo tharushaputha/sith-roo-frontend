@@ -3,12 +3,12 @@ import { redirect } from 'next/navigation';
 import { Star, BookOpen } from 'lucide-react';
 import React from 'react';
 
-// ✅ Explicit props type
+// ✅ Explicit props type (no PageProps import)
 type BookDetailPageProps = {
   params: { bookId: string };
 };
 
-// Supabase fetch
+// Fetch book from Supabase
 async function fetchBookDetails(bookId: string) {
   const { data: book, error } = await supabase
     .from('books')

@@ -8,7 +8,7 @@ type EpisodePageProps = {
   params: { episodeId: string };
 };
 
-// Supabase fetch
+// Fetch episode from Supabase
 async function fetchEpisodeDetails(episodeId: string) {
   const { data: episode, error } = await supabase
     .from('ape_katha')
