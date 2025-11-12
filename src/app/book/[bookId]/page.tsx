@@ -1,9 +1,9 @@
 import { supabase } from '@/lib/supabaseClient';
 import { redirect } from 'next/navigation';
-import { Star, BookOpen } from 'lucide-react';
+import { Star } from 'lucide-react';
 import React from 'react';
 
-// ✅ Explicit props type (no PageProps import)
+// ✅ Explicit inline type for props — no PageProps import
 type BookDetailPageProps = {
   params: { bookId: string };
 };
@@ -16,7 +16,7 @@ async function fetchBookDetails(bookId: string) {
     .eq('book_id', bookId)
     .single();
 
-  if (error || !book) redirect('/books'); // redirect if not found
+  if (error || !book) redirect('/'); // redirect if book not found
   return book;
 }
 
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: { params: { bookId: string } 
   return { title: `${book.title} - Sith Roo` };
 }
 
-// Main component
+// Main Page Component
 export default async function BookDetailPage({ params }: BookDetailPageProps) {
   const { bookId } = params;
   const book = await fetchBookDetails(bookId);
@@ -65,11 +65,6 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
 
           <p className="text-lg text-gray-800">{book.description || 'No description available.'}</p>
         </div>
-      </div>
-
-      <div className="mt-8 text-center text-gray-500">
-        <BookOpen size={20} className="inline-block mr-2" />
-        End of Book Details
       </div>
     </div>
   );
