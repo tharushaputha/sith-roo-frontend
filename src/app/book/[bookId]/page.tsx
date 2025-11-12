@@ -1,98 +1,75 @@
 import { supabase } from '@/lib/supabaseClient';
 import { redirect } from 'next/navigation';
-import { BookOpen } from 'lucide-react';
+import { Star, BookOpen } from 'lucide-react';
 import React from 'react';
 
-// ✅ Local type definition (no PageProps import!)
-type EpisodePageProps = {
+// ✅ Explicit props type
+type BookDetailPageProps = {
   params: { bookId: string };
 };
 
-// 🧩 Supabase එකෙන් ape_katha table එකේ data fetch කිරීම
-async function fetchEpisodeDetails(bookId: string) {
-  const { data: episode, error } = await supabase
-    .from('ape_katha')
+// Supabase fetch
+async function fetchBookDetails(bookId: string) {
+  const { data: book, error } = await supabase
+    .from('books')
     .select('*')
-    .eq('episode_id', bookId)
+    .eq('book_id', bookId)
     .single();
 
-  if (error || !episode) {
-    redirect('/category/ape-katha'); // Data නැත්නම් redirect වෙයි
-  }
-
-  return episode;
+  if (error || !book) redirect('/books'); // redirect if not found
+  return book;
 }
 
-// 🧠 Dynamic metadata (SEO සඳහා)
-export async function generateMetadata({
-  params,
-}: {
-  params: { bookId: string };
-}) {
-  const episode = await fetchEpisodeDetails(params.bookId);
-  if (!episode) return { title: 'Episode Not Found' };
-  return {
-    title: `${episode.title} (Ep. ${episode.episode_number}) - Sith Roo`,
-  };
+// Metadata for SEO
+export async function generateMetadata({ params }: { params: { bookId: string } }) {
+  const book = await fetchBookDetails(params.bookId);
+  if (!book) return { title: 'Book Not Found' };
+  return { title: `${book.title} - Sith Roo` };
 }
 
-// 🖼️ Main Page Component
-export default async function BookDetailPage({ params }: EpisodePageProps) {
+// Main component
+export default async function BookDetailPage({ params }: BookDetailPageProps) {
   const { bookId } = params;
-  const episode = await fetchEpisodeDetails(bookId);
+  const book = await fetchBookDetails(bookId);
 
-  // 🧱 Image/Text split logic
-  const contentBlocks = episode.story_content?.split('---IMAGE-BREAK---') || [];
+  const ratingStars = Array.from({ length: 5 }, (_, i) => (
+    <Star
+      key={i}
+      size={20}
+      fill={i < Math.round(book.rating || 0) ? '#FFC300' : 'none'}
+      color="#FFC300"
+    />
+  ));
 
   return (
     <div className="container mx-auto px-4 md:px-8 py-10 max-w-4xl">
-      {/* Title and Info */}
-      <h1 className="text-4xl font-extrabold text-[#071952] mb-2">
-        {episode.title}
-      </h1>
-      <h2 className="text-2xl font-semibold text-red-600 mb-8">
-        Episode {episode.episode_number}
-      </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 bg-white p-8 rounded-xl shadow-2xl">
+        {/* Book Cover */}
+        <div className="lg:col-span-1 flex justify-center">
+          <img
+            src={book.cover_url || '/placeholder-book.png'}
+            alt={book.title}
+            className="w-full max-w-xs rounded-xl shadow-2xl"
+          />
+        </div>
 
-      {/* Content */}
-      <div className="bg-white p-8 rounded-xl shadow-2xl space-y-8 border-l-4 border-red-500">
-        {contentBlocks.length > 0 ? (
-          contentBlocks.map((block: string, index: number) => {
-            // 🖼️ Image detection
-            if (
-              block.trim().startsWith('http') ||
-              block.trim().startsWith('/images/')
-            ) {
-              return (
-                <div key={index} className="flex justify-center my-6">
-                  <img
-                    src={block.trim()}
-                    alt={`Image for segment ${index}`}
-                    className="w-full h-auto max-h-[60vh] object-contain rounded-lg shadow-xl border border-gray-200"
-                  />
-                </div>
-              );
-            } else {
-              // 📝 Text section
-              return (
-                <p
-                  key={index}
-                  className="text-lg text-gray-800 leading-relaxed indent-8 whitespace-pre-wrap"
-                >
-                  {block.trim()}
-                </p>
-              );
-            }
-          })
-        ) : (
-          <p className="text-gray-600 italic">No story content available.</p>
-        )}
+        {/* Book Details */}
+        <div className="lg:col-span-2 space-y-6">
+          <h1 className="text-4xl font-extrabold text-[#071952]">{book.title}</h1>
+          <h2 className="text-xl font-semibold text-gray-700">Author: {book.author}</h2>
+
+          <div className="flex items-center space-x-2">
+            <div className="flex space-x-0.5">{ratingStars}</div>
+            <span className="text-gray-500">({book.rating.toFixed(1)}/5)</span>
+          </div>
+
+          <p className="text-lg text-gray-800">{book.description || 'No description available.'}</p>
+        </div>
       </div>
 
-      {/* Footer */}
       <div className="mt-8 text-center text-gray-500">
         <BookOpen size={20} className="inline-block mr-2" />
-        End of Episode {episode.episode_number}
+        End of Book Details
       </div>
     </div>
   );
